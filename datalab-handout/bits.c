@@ -169,9 +169,6 @@ int tmin(void) {
  *   Max ops: 10
  *   Rating: 1
  */
-
-//#include <stdbool.h>
-
 int isTmax(int x) {
 
   int a = ~((x + 1) ^ x);
@@ -189,7 +186,13 @@ int isTmax(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+
+  int mask = ~((0xAA << 24) + (0xAA << 16) + (0xAA << 8) + 0xAA);
+ 
+  int a = x | mask;
+  int b = !(~a);
+
+  return b;
 }
 /* 
  * negate - return -x 
