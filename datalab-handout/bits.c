@@ -218,7 +218,16 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+
+  int a = ~(x >> 3);
+  int b = ~(a ^ 6); // check if we have 110 present. if so, b is 0 (it's ascii)
+  
+  int c = ~(~x ^ 0b111000); // check if we have 111000. if so, c is 0 (it's ascii)
+  int d = ~(~x ^ 0b111001); // check if we have 111001. if so, d is 0 (it's ascii)
+
+  int e = !b + !c + !d; 
+
+  return e;
 }
 /* 
  * conditional - same as x ? y : z 
