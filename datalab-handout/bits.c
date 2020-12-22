@@ -252,7 +252,18 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+
+  int maskx = x >> 31; // 11111: x is negative, 0000: x is positive
+  int masky = y >> 31; // 11111: y is negative, 0000: y is positive
+
+  int a = maskx & (!masky); // 1 if x is negative & y is positive, else 0
+  
+  int cond = (maskx & masky) | (~maskx) & (~masky); // 1 if x & y are both negative or x & y are both positive
+  int b = cond & (((x+(~y+1)) >> 31) & 1); // check if x - y gives a negative number. if so, return 1
+  
+  int c = !(x+(~y+1)); // check if x - y = 0
+
+  return a + b + c;
 }
 //4
 /* 
