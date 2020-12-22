@@ -258,7 +258,7 @@ int isLessOrEqual(int x, int y) {
 
   int a = maskx & (!masky); // 1 if x is negative & y is positive, else 0
   
-  int cond = (maskx & masky) | (~maskx) & (~masky); // 1 if x & y are both negative or x & y are both positive
+  int cond = (maskx & masky) | ((~maskx) & (~masky)); // 1 if x & y are both negative or x & y are both positive
   int b = cond & (((x+(~y+1)) >> 31) & 1); // check if x - y gives a negative number. if so, return 1
   
   int c = !(x+(~y+1)); // check if x - y = 0
@@ -275,7 +275,13 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+
+  int tmax = (0x7F << 24) + (0xFF << 16) + (0xFF << 8) + 0xFF; // largest possible positive int
+  int a = tmax + x; // overflow for positive ints will result in leading digit to be 1
+
+  int b = ~((x >> 31) | (a >> 31)) & 1; // check if leading digit is 1
+
+  return b;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
