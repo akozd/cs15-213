@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# http://csapp.cs.cmu.edu/3e/labs.html
+
 name="cs15213"
 docker kill $name
 container=$(docker run --name $name -dt -v $(pwd):/home ubuntu:latest | docker start cs15213)

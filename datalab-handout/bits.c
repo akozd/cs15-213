@@ -296,7 +296,35 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+  
+  int a = ((x >> 31) & (~x)) | (~(x >> 31) & x); // if x is negative, make it positive. else, keep x as is
+  
+  int bits = 16; // midway point
+ 
+  int b = a >> bits; // if a is zero that means it needs < 16 bits. else it needs more
+  int cond = ((!b) ^ (~1)) + 1; // b is zero: cond1 = 0 (less bits are required). b is pos...: 1111...
+  bits = bits + ((~cond) & (~8 + 1)) + (cond & 8); // less bits required, subtract 8. more bits are required, add 8
+  
+  int c = a >> bits;
+  cond = ((!c) ^ (~1)) + 1;
+  bits = bits + ((~cond) & (~4 + 1)) + (cond & 4);
+
+  int d = a >> bits;
+  cond = ((!d) ^ (~1)) + 1;
+  bits = bits + ((~cond) & (~2 + 1)) + (cond & 2);
+
+  int e = a >> bits;
+  cond = ((!e) ^ (~1)) + 1;
+  bits = bits + ((~cond) & (~1 + 1)) + (cond & 1);
+
+  int f = a >> bits;
+  bits += f;
+  
+  // -1 and 0 are two edge cases
+  int isZero = ((!!x) ^ (~1)) + 1;
+  int isNegativeOne = (!!(~x)) + (~0);
+
+  return 1 + bits + (isZero & (~0)) + (isNegativeOne & (~0));
 }
 //float
 /* 
