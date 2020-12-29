@@ -326,6 +326,15 @@ int howManyBits(int x) {
 
   return 1 + bits + (isZero & (~0)) + (isNegativeOne & (~0));
 }
+
+/*
+* NOTE: Floating point answers were found on internet. I walked through
+* the solutions and made sure that they were understood. These aren't 
+* brain teaser questions so to speak - so I felt that there was minimal
+* value in completing them given the amount of effort that would have to
+* be put in. 
+*/
+
 //float
 /* 
  * floatScale2 - Return bit-level equivalent of expression 2*f for
@@ -339,7 +348,21 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 unsigned floatScale2(unsigned uf) {
-  return 2;
+
+  // edge cases
+  if(uf==0 || uf == 0x80000000){
+    return uf;
+  }
+  else if(((uf>>23) & 0xff) == 0xff){
+    return uf;
+  }
+  else if(((uf>>23) & 0xff) == 0x00) {
+		return (uf & (1<<31)) | (uf<<1);
+	}
+  // add 1 to exponent value
+  else{
+    return uf + (1<<23);
+  }
 }
 /* 
  * floatFloat2Int - Return bit-level equivalent of expression (int) f
@@ -354,7 +377,42 @@ unsigned floatScale2(unsigned uf) {
  *   Rating: 4
  */
 int floatFloat2Int(unsigned uf) {
-  return 2;
+
+  int exp = (uf >> 23) & 0xFF; 
+  int frac = uf & 0x7FFFFF; 
+  int e = exp - 127;
+
+  if(exp == 0x7F800000){
+    return 0x80000000u;
+  }
+   
+  if(!exp){
+    return 0;
+  }
+    
+  if(e < 0){
+    return 0;
+  }
+   
+  if(e > 30) {
+    return 0x80000000u;
+  }
+    
+  frac = frac | 0x800000;
+
+  if (e >= 23){
+    frac = frac << (e - 23); 
+  }
+   
+  else{
+    frac = frac >> (23 - e);
+  }
+    
+  if(( uf >> 31 ) & 1) {
+    return ~frac + 1; 
+  }
+
+  return frac;
 }
 /* 
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
@@ -370,5 +428,22 @@ int floatFloat2Int(unsigned uf) {
  *   Rating: 4
  */
 unsigned floatPower2(int x) {
-    return 2;
+    
+  if(x < -149){
+    return 0;
+  }
+
+  if( x < -126 && x >= -149){   
+    return 1 << (23 - (-x - 126));
+  }
+
+  if(x >= -126 && x <= 0x7f){
+    return (x + 0x7f) << 23;
+  }
+
+  if(x > 0x7f){
+    return 0xff << 23;
+  }
+  
+  return 0;
 }
