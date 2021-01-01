@@ -1,0 +1,15 @@
+Border relations with Canada have never been better.
+1 2 4 8 16 32
+0 207
+
+seems like 6 is only being stored in rsp + 12
+
+# 1 is correct , (rsp has 1), 2 is correct arg1 + arg1 must equal arg 2
+
+# rbx stores 2, rdx has 6, 
+rsp + 4 has 2
+
+# rsp + 8 has 3
+# rsp + 12 has 4
+# rsp + 16 has 5
+# rsp + 20 has 6

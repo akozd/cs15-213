@@ -8,6 +8,6 @@ container=$(docker run --name $name -dt -v $(pwd):/home ubuntu:latest | docker s
 docker exec -it $container /bin/bash -c \
     "apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get install gcc-multilib cmake git -y && \
+    apt-get install gcc-multilib cmake git gdb -y && \
     cd home && \
     bash"
