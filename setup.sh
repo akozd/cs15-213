@@ -2,9 +2,7 @@
 
 # http://csapp.cs.cmu.edu/3e/labs.html
 
-name="cs15213"
-docker kill $name
-container=$(docker run --name $name -dt -v $(pwd):/home ubuntu:latest | docker start cs15213)
+container=$(docker run --security-opt seccomp=unconfined -dt -v $(pwd):/home ubuntu:latest)
 docker exec -it $container /bin/bash -c \
     "apt-get update -y && \
     apt-get upgrade -y && \
