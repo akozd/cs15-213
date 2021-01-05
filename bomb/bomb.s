@@ -511,6 +511,15 @@ Disassembly of section .text:
   4010f2:	5b                   	pop    %rbx
   4010f3:	c3                   	retq   
 
+# notes: 1 2 3 4 5 6 takes me the furthest, need to examine how certain registers are changing when my input args change
+
+# first arg MUST be less than 6
+# None of the args may equal each other
+# seems to me like we're going to have to manipulate when the jump is made
+
+# pattern: 2,1 3,1 4,1 5,1 6,1 (eax, memory content of rbp)
+
+
 00000000004010f4 <phase_6>:
   4010f4:	41 56                	push   %r14
   4010f6:	41 55                	push   %r13
@@ -520,37 +529,45 @@ Disassembly of section .text:
   4010fc:	48 83 ec 50          	sub    $0x50,%rsp
   401100:	49 89 e5             	mov    %rsp,%r13
   401103:	48 89 e6             	mov    %rsp,%rsi
-  401106:	e8 51 03 00 00       	callq  40145c <read_six_numbers>
-  40110b:	49 89 e6             	mov    %rsp,%r14
-  40110e:	41 bc 00 00 00 00    	mov    $0x0,%r12d
-  401114:	4c 89 ed             	mov    %r13,%rbp
-  401117:	41 8b 45 00          	mov    0x0(%r13),%eax
-  40111b:	83 e8 01             	sub    $0x1,%eax
-  40111e:	83 f8 05             	cmp    $0x5,%eax
+  401106:	e8 51 03 00 00       	callq  40145c <read_six_numbers> # int1: rsp, int2: rsp + 4, int3: rsp + 8, etc...
+  40110b:	49 89 e6             	mov    %rsp,%r14 # arg1 -> r14
+  40110e:	41 bc 00 00 00 00    	mov    $0x0,%r12d # 0 -> r12d
+
+  401114:	4c 89 ed             	mov    %r13,%rbp # 1st arg in memory address of rbp, loop then second, etc
+  401117:	41 8b 45 00          	mov    0x0(%r13),%eax # 1st arg in eax
+  40111b:	83 e8 01             	sub    $0x1,%eax # 1st arg - 1 in eax
+  40111e:	83 f8 05             	cmp    $0x5,%eax # "jump if 1st arg is below or equal 6"
   401121:	76 05                	jbe    401128 <phase_6+0x34>
   401123:	e8 12 03 00 00       	callq  40143a <explode_bomb>
-  401128:	41 83 c4 01          	add    $0x1,%r12d
-  40112c:	41 83 fc 06          	cmp    $0x6,%r12d
-  401130:	74 21                	je     401153 <phase_6+0x5f>
-  401132:	44 89 e3             	mov    %r12d,%ebx
-  401135:	48 63 c3             	movslq %ebx,%rax
-  401138:	8b 04 84             	mov    (%rsp,%rax,4),%eax
-  40113b:	39 45 00             	cmp    %eax,0x0(%rbp)
-  40113e:	75 05                	jne    401145 <phase_6+0x51>
+
+  401128:	41 83 c4 01          	add    $0x1,%r12d # 1 in r12d <- 1 is ALWAYS going to be here
+  40112c:	41 83 fc 06          	cmp    $0x6,%r12d # We jump ONLY jump at 6th number... r13 contains memory address
+  401130:	74 21                	je     401153 <phase_6+0x5f> # we need to get to this guy!
+  401132:	44 89 e3             	mov    %r12d,%ebx # 1 in ebx
+
+  # MAKES SURE NONE OF THE ARGS ARE EQUAL TO EACH OTHER
+  401135:	48 63 c3             	movslq %ebx,%rax # 1 in rax, ebx... this just sign extends
+  401138:	8b 04 84             	mov    (%rsp,%rax,4),%eax # moves our second arg into eax
+  40113b:	39 45 00             	cmp    %eax,0x0(%rbp) # compare second arg to first arg (which was loaded in our memory address.. making sure that arg2 and above are not 1?)
+  40113e:	75 05                	jne    401145 <phase_6+0x51> 
   401140:	e8 f5 02 00 00       	callq  40143a <explode_bomb>
-  401145:	83 c3 01             	add    $0x1,%ebx
-  401148:	83 fb 05             	cmp    $0x5,%ebx
-  40114b:	7e e8                	jle    401135 <phase_6+0x41>
-  40114d:	49 83 c5 04          	add    $0x4,%r13
-  401151:	eb c1                	jmp    401114 <phase_6+0x20>
-  401153:	48 8d 74 24 18       	lea    0x18(%rsp),%rsi
-  401158:	4c 89 f0             	mov    %r14,%rax
-  40115b:	b9 07 00 00 00       	mov    $0x7,%ecx
-  401160:	89 ca                	mov    %ecx,%edx
-  401162:	2b 10                	sub    (%rax),%edx
-  401164:	89 10                	mov    %edx,(%rax)
-  401166:	48 83 c0 04          	add    $0x4,%rax
-  40116a:	48 39 f0             	cmp    %rsi,%rax
+  401145:	83 c3 01             	add    $0x1,%ebx # 2 in ebx... ebx seems like a counter
+  401148:	83 fb 05             	cmp    $0x5,%ebx 
+  40114b:	7e e8                	jle    401135 <phase_6+0x41> # loop back up to the movslq 5 times
+
+  40114d:	49 83 c5 04          	add    $0x4,%r13 # add 4 to r13 -> this give memory address of our second arg
+  401151:	eb c1                	jmp    401114 <phase_6+0x20> # and we go all the way back to the "mov r13" instruction
+  
+  # continue here...
+   
+  401153:	48 8d 74 24 18       	lea    0x18(%rsp),%rsi # 0 in rsi?
+  401158:	4c 89 f0             	mov    %r14,%rax # memory address in rax, points to 1
+  40115b:	b9 07 00 00 00       	mov    $0x7,%ecx # 7 in ecx
+  401160:	89 ca                	mov    %ecx,%edx # 7 in edx
+  401162:	2b 10                	sub    (%rax),%edx # 6 in edx
+  401164:	89 10                	mov    %edx,(%rax) # 6 in memory address
+  401166:	48 83 c0 04          	add    $0x4,%rax # increment rax address by 4 (2 is stored here)
+  40116a:	48 39 f0             	cmp    %rsi,%rax # rsi: 140737488348600, rax: 140737488348580, 0 in rsi
   40116d:	75 f1                	jne    401160 <phase_6+0x6c>
   40116f:	be 00 00 00 00       	mov    $0x0,%esi
   401174:	eb 21                	jmp    401197 <phase_6+0xa3>
@@ -586,7 +603,7 @@ Disassembly of section .text:
   4011da:	bd 05 00 00 00       	mov    $0x5,%ebp
   4011df:	48 8b 43 08          	mov    0x8(%rbx),%rax
   4011e3:	8b 00                	mov    (%rax),%eax
-  4011e5:	39 03                	cmp    %eax,(%rbx)
+  4011e5:	39 03                	cmp    %eax,(%rbx) # eax: 477, rbx: 443... rbx has to be greater
   4011e7:	7d 05                	jge    4011ee <phase_6+0xfa>
   4011e9:	e8 4c 02 00 00       	callq  40143a <explode_bomb>
   4011ee:	48 8b 5b 08          	mov    0x8(%rbx),%rbx
