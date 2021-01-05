@@ -559,34 +559,40 @@ Disassembly of section .text:
   401151:	eb c1                	jmp    401114 <phase_6+0x20> # and we go all the way back to the "mov r13" instruction
   
   # continue here...
-   
-  401153:	48 8d 74 24 18       	lea    0x18(%rsp),%rsi # 0 in rsi?
-  401158:	4c 89 f0             	mov    %r14,%rax # memory address in rax, points to 1
+
+  401153:	48 8d 74 24 18       	lea    0x18(%rsp),%rsi # 0 in memory address of rsi (140737488348584) (for reference, arg6 is at 0x14(%rsp))
+  401158:	4c 89 f0             	mov    %r14,%rax # memory address in rax, points first arg 140737488348560 (24 / 4 = 6.. )
   40115b:	b9 07 00 00 00       	mov    $0x7,%ecx # 7 in ecx
+
   401160:	89 ca                	mov    %ecx,%edx # 7 in edx
-  401162:	2b 10                	sub    (%rax),%edx # 6 in edx
-  401164:	89 10                	mov    %edx,(%rax) # 6 in memory address
+  401162:	2b 10                	sub    (%rax),%edx # sub first arg from 7, then sub second arg from 7, etc.
+  401164:	89 10                	mov    %edx,(%rax) # 6 in memory address (7-arg1, 7-arg2, 7-arg3)
   401166:	48 83 c0 04          	add    $0x4,%rax # increment rax address by 4 (2 is stored here)
   40116a:	48 39 f0             	cmp    %rsi,%rax # rsi: 140737488348600, rax: 140737488348580, 0 in rsi
   40116d:	75 f1                	jne    401160 <phase_6+0x6c>
+
+  # here: 6, 5, 4, 3, 2, 1 (7-1, 7-2, 7-3, 7-4, 7-5, 7-6) 
+
   40116f:	be 00 00 00 00       	mov    $0x0,%esi
   401174:	eb 21                	jmp    401197 <phase_6+0xa3>
-  401176:	48 8b 52 08          	mov    0x8(%rdx),%rdx
+
+  401176:	48 8b 52 08          	mov    0x8(%rdx),%rdx # 6304480, 168 in mem address
   40117a:	83 c0 01             	add    $0x1,%eax
-  40117d:	39 c8                	cmp    %ecx,%eax
+  40117d:	39 c8                	cmp    %ecx,%eax # ecx contains our args
   40117f:	75 f5                	jne    401176 <phase_6+0x82>
   401181:	eb 05                	jmp    401188 <phase_6+0x94>
   401183:	ba d0 32 60 00       	mov    $0x6032d0,%edx
   401188:	48 89 54 74 20       	mov    %rdx,0x20(%rsp,%rsi,2)
   40118d:	48 83 c6 04          	add    $0x4,%rsi
   401191:	48 83 fe 18          	cmp    $0x18,%rsi
-  401195:	74 14                	je     4011ab <phase_6+0xb7>
-  401197:	8b 0c 34             	mov    (%rsp,%rsi,1),%ecx
+  401195:	74 14                	je     4011ab <phase_6+0xb7> # if we've gotten to the last arg, we jump
+  401197:	8b 0c 34             	mov    (%rsp,%rsi,1),%ecx # load arg 1 into ecx
   40119a:	83 f9 01             	cmp    $0x1,%ecx
   40119d:	7e e4                	jle    401183 <phase_6+0x8f>
   40119f:	b8 01 00 00 00       	mov    $0x1,%eax
-  4011a4:	ba d0 32 60 00       	mov    $0x6032d0,%edx
+  4011a4:	ba d0 32 60 00       	mov    $0x6032d0,%edx # mem address is 6304464... 332 in mem address?
   4011a9:	eb cb                	jmp    401176 <phase_6+0x82>
+
   4011ab:	48 8b 5c 24 20       	mov    0x20(%rsp),%rbx
   4011b0:	48 8d 44 24 28       	lea    0x28(%rsp),%rax
   4011b5:	48 8d 74 24 50       	lea    0x50(%rsp),%rsi
