@@ -3,6 +3,4 @@ Border relations with Canada have never been better.
 0 207
 7 0
 ionefg
-
-rvfedu
-rsp + 8 seems like where we're storing first arg
+4 3 2 1 6 5 

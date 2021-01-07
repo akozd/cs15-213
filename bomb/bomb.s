@@ -572,17 +572,26 @@ Disassembly of section .text:
   40116d:	75 f1                	jne    401160 <phase_6+0x6c>
 
   # here: 6, 5, 4, 3, 2, 1 (7-1, 7-2, 7-3, 7-4, 7-5, 7-6) 
+  # 1: 332, 2: 168, 3: 924, 4: 691, 5:477, 6:433
+  # we have array of mem addresses with values: 332 ,168, 924, 691, 477, 443
+  # loop through with iterator
+  #   when loop iterator == arg_n value:
+  #     loop through our args:
+  #       array[loop iterator] mem address moves to -> rsp + 2 * 0x4 * j * 32  where j in 0-6. mem address then points at address of array with values
+  #       if we hit our arg with value 1, break out of loop and then continue with next iterator
+
+  # (this is a double for loop)
 
   40116f:	be 00 00 00 00       	mov    $0x0,%esi
   401174:	eb 21                	jmp    401197 <phase_6+0xa3>
 
-  401176:	48 8b 52 08          	mov    0x8(%rdx),%rdx # 6304480, 168 in mem address
-  40117a:	83 c0 01             	add    $0x1,%eax
-  40117d:	39 c8                	cmp    %ecx,%eax # ecx contains our args
-  40117f:	75 f5                	jne    401176 <phase_6+0x82>
+  401176:	48 8b 52 08          	mov    0x8(%rdx),%rdx # 2: 6304480, 168 in mem address, 3: 924, 4: 691, 5: 477, 6: 443
+  40117a:	83 c0 01             	add    $0x1,%eax # eax started as 1 (on line 40119f)
+  40117d:	39 c8                	cmp    %ecx,%eax # ecx contains our altered args
+  40117f:	75 f5                	jne    401176 <phase_6+0x82> # go back up until the iterator equals our nth arg value
   401181:	eb 05                	jmp    401188 <phase_6+0x94>
   401183:	ba d0 32 60 00       	mov    $0x6032d0,%edx
-  401188:	48 89 54 74 20       	mov    %rdx,0x20(%rsp,%rsi,2)
+  401188:	48 89 54 74 20       	mov    %rdx,0x20(%rsp,%rsi,2) # maybe we need two here because it's pointers? continue here after jmp 401188 -> for arg=6 move 443 -> rsp + iteration*2*32
   40118d:	48 83 c6 04          	add    $0x4,%rsi
   401191:	48 83 fe 18          	cmp    $0x18,%rsi
   401195:	74 14                	je     4011ab <phase_6+0xb7> # if we've gotten to the last arg, we jump
@@ -593,35 +602,106 @@ Disassembly of section .text:
   4011a4:	ba d0 32 60 00       	mov    $0x6032d0,%edx # mem address is 6304464... 332 in mem address?
   4011a9:	eb cb                	jmp    401176 <phase_6+0x82>
 
-  4011ab:	48 8b 5c 24 20       	mov    0x20(%rsp),%rbx
-  4011b0:	48 8d 44 24 28       	lea    0x28(%rsp),%rax
-  4011b5:	48 8d 74 24 50       	lea    0x50(%rsp),%rsi
-  4011ba:	48 89 d9             	mov    %rbx,%rcx
-  4011bd:	48 8b 10             	mov    (%rax),%rdx
-  4011c0:	48 89 51 08          	mov    %rdx,0x8(%rcx)
-  4011c4:	48 83 c0 08          	add    $0x8,%rax
-  4011c8:	48 39 f0             	cmp    %rsi,%rax
+  
+  # seq, rbx, rax, 
+  # 6, 5, 4, 3, 2, 1: 332, 168, nothing? -6392 -> 924
+  # 1, 2, 3, 4, 5, 6: 443, mem->477, nothing? -6392 --> rax: 691
+  # 1, 2, 6, 4, 5, 3: 443, 477, rax --> 332
+  # 5 6 4 3 2 1 :     168  332, rax-> 924?
+  # 5 6 4 2 3 1     : 168 
+  # 6 2 1 3 4 5 :     332
+  # 4:                924
+  # 3:                691
+  # 2 1 3 4 5 6 :     477, mem->433, nothing?
+
+  1: 443, 2: 477, 3: 691, 4: 924, 5: 168, 6: 332
+
+  1 2 3 4 5 6:
+  # (1) rbx: "6304544" -> 443
+  # (2) rax: "140737488348600" -> 6304528 -> 477
+  # rsi: "140737488348640" -> -6392
+
+  4 5 1 2 3 6:
+  # (4) rbx: "6304496" -> 924
+  # (5) rax: "140737488348600" -> 6304480 -> 168
+  # rsi is the same
+
+  2 3 4 5 6 1 
+  # (2) rbx: "6304528" -> 477
+  # (3) rax: "140737488348600" -> 6304512 -> 691
+
+  1: 6304544 (443), 2: 6304528 (477), 3: 6304512 (691), 4: 6304496 (924), 5: 6304480 (168), 6: 6304464 (332) (decreasing by 16)
+     
+
+  4011ab:	48 8b 5c 24 20       	mov    0x20(%rsp),%rbx # 443 0x20 = 32 # wherever 6 is, that's the value that gets loaded from array
+  4011b0:	48 8d 44 24 28       	lea    0x28(%rsp),%rax # 6304528 in mem address, points to 477, 0x28 = 40
+  4011b5:	48 8d 74 24 50       	lea    0x50(%rsp),%rsi # nothing, 0x50 = 80
+  4011ba:	48 89 d9             	mov    %rbx,%rcx # array arg map-> rcx (1: 6304544)
+
+  4011bd:	48 8b 10             	mov    (%rax),%rdx # move second arg pointer to rdx
+  # put the second arg pointer into the first + 8 
+  4011c0:	48 89 51 08          	mov    %rdx,0x8(%rcx) # in 6304544 + 8 = 6304552 -> 6304528 -> 477
+  4011c4:	48 83 c0 08          	add    $0x8,%rax # add 8 to (2: 6304528) -> (3: )
+  4011c8:	48 39 f0             	cmp    %rsi,%rax # rsi: 140737488348640 <- this is just a counter, loops through all 5 args
   4011cb:	74 05                	je     4011d2 <phase_6+0xde>
   4011cd:	48 89 d1             	mov    %rdx,%rcx
   4011d0:	eb eb                	jmp    4011bd <phase_6+0xc9>
-  4011d2:	48 c7 42 08 00 00 00 	movq   $0x0,0x8(%rdx)
+
+  1: 6304544 (443), 2: 6304528 (477), 3: 6304512 (691), 4: 6304496 (924), 5: 6304480 (168), 6: 6304464 (332) (decreasing by 16)
+    first num eliminated 6304552 -> 0 (0), 6304536 -> 6304512 3 (691), 6304520 -> 6304496 4 (924), 6304504 -> 6304480 5 (168)
+  mem addr Number + 8 = Number + 1 mem address
+
+  for testing pattern:
+  2 3 4 5 6 1
+
+  first numb: num mapping - 1 second numb: num mapping
+  second numb must be > first numb
+
+
+  443 477 691 924 168 332
+  
+  4011d2:	48 c7 42 08 00 00 00 	movq   $0x0,0x8(%rdx) 6304552 stays as 0
   4011d9:	00 
-  4011da:	bd 05 00 00 00       	mov    $0x5,%ebp
-  4011df:	48 8b 43 08          	mov    0x8(%rbx),%rax
+  4011da:	bd 05 00 00 00       	mov    $0x5,%ebp # ebp : 5, then 4, then 3, then 2
+  
+  # 3 4 5 6 1 2 : eax: 924 (3), rbx: 691 (4)
+  # 2 1 6 5 4 3 : 
+  eax: 433 (6), rbx: 477 (5)... 
+  eax: 332 (1), rbx: 443 (6)...
+  eax: 168 (2), rbx: 332 (1)...
+  eax: 924 (3), rbx: 168 (2)... no bueno
+  # 2 1 6 4 5 3 no bueno
+  # 2 1 6 3 4 5 no bueno
+  # 2 1 6 5 3 4 no bueno
+  # 6 5 4 3 2 1: 168,332 924,168
+
+  2 > 6 > 4 > 1 > 3 > 5:
+  (6)332,(2)477 
+  (4)924,(6)332
+
+
+
+  4011df:	48 8b 43 08          	mov    0x8(%rbx),%rax # move arg+1 pointer into rax
   4011e3:	8b 00                	mov    (%rax),%eax
-  4011e5:	39 03                	cmp    %eax,(%rbx) # eax: 477, rbx: 443... rbx has to be greater
+  4011e5:	39 03                	cmp    %eax,(%rbx) # eax: 477, rbx: 443... rbx has to be greater is arg + 1 pointer greater than arg?
   4011e7:	7d 05                	jge    4011ee <phase_6+0xfa>
   4011e9:	e8 4c 02 00 00       	callq  40143a <explode_bomb>
   4011ee:	48 8b 5b 08          	mov    0x8(%rbx),%rbx
   4011f2:	83 ed 01             	sub    $0x1,%ebp
   4011f5:	75 e8                	jne    4011df <phase_6+0xeb>
+
+  # just resetting the stack
+
   4011f7:	48 83 c4 50          	add    $0x50,%rsp
   4011fb:	5b                   	pop    %rbx
   4011fc:	5d                   	pop    %rbp
   4011fd:	41 5c                	pop    %r12
   4011ff:	41 5d                	pop    %r13
   401201:	41 5e                	pop    %r14
-  401203:	c3                   	retq   
+  401203:	c3                   	retq 
+
+  # NOTE: I had the answer way earlier (i suspected that we had to just go by smallest to largest or something like that) but I 
+  # messed up the number ordering and it threw me off for a bit........  
 
 0000000000401204 <fun7>:
   401204:	48 83 ec 08          	sub    $0x8,%rsp
