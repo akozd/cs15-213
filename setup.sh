@@ -6,6 +6,6 @@ container=$(docker run --security-opt seccomp=unconfined -dt -v $(pwd):/home ubu
 docker exec -it $container /bin/bash -c \
     "apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get install gcc-multilib cmake git gdb -y && \
+    apt-get install gcc-multilib cmake git gdb python3 -y && \
     cd home && \
     bash"

@@ -780,8 +780,8 @@ Disassembly of section .text:
   4017af:	e8 8c 02 00 00       	callq  401a40 <Gets>
   4017b4:	b8 01 00 00 00       	mov    $0x1,%eax
   4017b9:	48 83 c4 28          	add    $0x28,%rsp # adds 40 to rsp -> rsp contains 0x5561dca0 which points to 0x401976 (in test) address is stored + 0x28 above (40)... we want it to point to 00000000004017c0
-  4017bd:	c3                   	retq   
-  4017be:	90                   	nop
+  4017bd:	c3                   	retq   # rsp: 0x5561dca0 -> points to 0x401976 under normal circumstance
+  4017be:	90                   	nop    # 0x5561dc78: beginning of buffer
   4017bf:	90                   	nop
 
 00000000004017c0 <touch1>:
