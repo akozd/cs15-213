@@ -821,8 +821,8 @@ Disassembly of section .text:
 000000000040184c <hexmatch>:
   40184c:	41 54                	push   %r12
   40184e:	55                   	push   %rbp
-  40184f:	53                   	push   %rbx
-  401850:	48 83 c4 80          	add    $0xffffffffffffff80,%rsp
+  40184f:	53                   	push   %rbx # cookie in rbx
+  401850:	48 83 c4 80          	add    $0xffffffffffffff80,%rsp # sub 128 from rsp
   401854:	41 89 fc             	mov    %edi,%r12d
   401857:	48 89 f5             	mov    %rsi,%rbp
   40185a:	64 48 8b 04 25 28 00 	mov    %fs:0x28,%rax
@@ -871,12 +871,12 @@ Disassembly of section .text:
 
 00000000004018fa <touch3>:
   4018fa:	53                   	push   %rbx
-  4018fb:	48 89 fb             	mov    %rdi,%rbx
+  4018fb:	48 89 fb             	mov    %rdi,%rbx                  # cookeie in rdi, being moved to rbx
   4018fe:	c7 05 d4 2b 20 00 03 	movl   $0x3,0x202bd4(%rip)        # 6044dc <vlevel>
   401905:	00 00 00 
   401908:	48 89 fe             	mov    %rdi,%rsi
   40190b:	8b 3d d3 2b 20 00    	mov    0x202bd3(%rip),%edi        # 6044e4 <cookie>
-  401911:	e8 36 ff ff ff       	callq  40184c <hexmatch>
+  401911:	e8 36 ff ff ff       	callq  40184c <hexmatch> # cookie in edi and rsi
   401916:	85 c0                	test   %eax,%eax
   401918:	74 23                	je     40193d <touch3+0x43>
   40191a:	48 89 da             	mov    %rbx,%rdx
