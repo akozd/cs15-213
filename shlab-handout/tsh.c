@@ -165,27 +165,45 @@ int main(int argc, char **argv)
 */
 
 
+pid_t sfork()
+{
+    pid_t f = fork();
+
+    if(f < 0){
+        unix_error("Fork error");
+    }
+
+    return f;
+}
+
 
 void eval(char *cmdline) 
 {   
-    if (*cmdline == '\n'){
-        printf("no input");
-        return;
-    }
+    char *argv[MAXARGS];
+    int bg = parseline(cmdline, argv); // 1 if background job, 0 if foreground
 
-    char *pch;
-    pch = strtok(cmdline, " ");
+    if (argv[0] == NULL) return;
 
-    while (pch != NULL)
-    {
-        printf("yo\n");
-        if (strcmp(pch, "quit\n") == 0){
-            printf("quit was entered.\n");
-            exit(0);
+    if (!builtin_cmd(argv)){
+        // not a built in command
+        pid_t p;
+        if ((p = sfork()) == 0){
+            // child process
+            if (execve(argv[0], argv, environ) < 0){
+                printf("Command not found: %s\n", argv[0]);
+                exit(0);
+            }
         }
-        printf ("%s\n",pch);
-        pch = strtok(NULL, " ");
-    } 
+        if (!bg) {
+            // run the process as a foreground job and wait for process to finish before continuing
+            int *status;
+            if (waitpid(p, status, 0) < 0){
+                unix_error("Error running foreground job.");
+            }
+        }else{
+            printf("I should run as a background job.");
+        }
+    }
     return;
 }
 
@@ -252,6 +270,10 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
+    if(!strcmp("quit", argv[0])){
+        exit(0);
+    }
+    
     return 0;     /* not a builtin command */
 }
 
