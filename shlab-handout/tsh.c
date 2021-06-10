@@ -165,43 +165,75 @@ int main(int argc, char **argv)
 */
 
 
-pid_t sfork()
-{
+pid_t Fork() {
     pid_t f = fork();
-
-    if(f < 0){
+    if (f < 0) {
         unix_error("Fork error");
     }
-
     return f;
 }
+
+void Sigemptyset(sigset_t *set) {
+    if (sigemptyset(set) < 0) {
+        app_error("sigemptyset error");
+    }
+}
+
+void Sigaddset(sigset_t *set, int signum) {
+    if (sigaddset(set, signum) < 0) {
+        app_error("sigaddset error");
+    }
+}
+
+void Sigprocmask(int how, const sigset_t *set, sigset_t *oldset) {
+    if (sigprocmask(how, set, oldset) < 0) {
+        app_error("sigprocmask error");
+    }
+}
+
+static size_t sio_strlen(char s[])
+{
+    int i = 0;
+
+    while (s[i] != '\0')
+        ++i;
+    return i;
+}
+
+ssize_t sio_puts(char *s){
+    return write(STDOUT_FILENO, s, sio_strlen(s));
+};
 
 
 void eval(char *cmdline) 
 {   
     char *argv[MAXARGS];
     int bg = parseline(cmdline, argv); // 1 if background job, 0 if foreground
+    pid_t p;
+    sigset_t mask; 
 
     if (argv[0] == NULL) return;
 
     if (!builtin_cmd(argv)){
         // not a built in command
-        pid_t p;
-        if ((p = sfork()) == 0){
+        
+        
+        if ((p = Fork()) == 0){
             // child process
             if (execve(argv[0], argv, environ) < 0){
-                printf("Command not found: %s\n", argv[0]);
+                printf("%s: Command not found\n", argv[0]);
                 exit(0);
             }
         }
         if (!bg) {
             // run the process as a foreground job and wait for process to finish before continuing
-            int *status;
-            if (waitpid(p, status, 0) < 0){
-                unix_error("Error running foreground job.");
-            }
-        }else{
-            printf("I should run as a background job.");
+            addjob(jobs, p, FG, cmdline);
+            // int *status;
+            // if (waitpid(p, status, 0) < 0){
+            //     unix_error("Error running foreground job.");
+            // }
+        } else {
+           addjob(jobs, p, BG, cmdline);
         }
     }
     return;
@@ -306,6 +338,8 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
+    int olderrno = errno;
+    errno = olderrno;
     return;
 }
 
@@ -316,6 +350,9 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
+    int olderrno = errno;
+    
+    errno = olderrno;
     return;
 }
 
@@ -326,6 +363,8 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
+    int olderrno = errno;
+    errno = olderrno;
     return;
 }
 
